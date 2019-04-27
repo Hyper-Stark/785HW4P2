@@ -8,6 +8,7 @@ from torch.nn.utils.rnn import pad_packed_sequence
 
 EMBEDDING_DIM = 128
 TEACHING_FORCE_UNIT = 5
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class ZLNet(nn.Module):
 
@@ -81,9 +82,9 @@ class Speller(nn.Module):
         #hidden state
         h1shape = (batch_size, EMBEDDING_DIM)
         h2shape = (batch_size, self.hidden_size)
-        h1, c1 = [nn.Parameter(torch.zeros(h1shape)) for i in range(2)]
-        h2, c2 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
-        h3, c3 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
+        h1, c1 = [nn.Parameter(torch.zeros(h1shape)).to(DEVICE) for i in range(2)]
+        h2, c2 = [nn.Parameter(torch.zeros(h2shape)).to(DEVICE) for i in range(2)]
+        h3, c3 = [nn.Parameter(torch.zeros(h2shape)).to(DEVICE) for i in range(2)]
 
         # start state: s_0, the beginning of a sentence
         # must be a <sos>, and 'must' means the probability 
