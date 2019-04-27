@@ -13,7 +13,7 @@ from constant import CHARSET
 from dataloader import loader
 
 
-EPOCHS = 12
+EPOCHS = 15
 TIME_ZONE = pytz.timezone("America/New_York")
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -22,7 +22,7 @@ dev_trans_file = '../data/dev_transcripts.npy'
 train_data_file = '../data/train.npy'
 train_trans_file = '../data/train_transcripts.npy'
 
-train_loader = loader(dev_data_file, dev_trans_file)
+train_loader = loader(train_data_file, train_trans_file)
 valid_loader = loader(dev_data_file, dev_trans_file)
 
 model = ZLNet().to(DEVICE)
@@ -121,7 +121,7 @@ for epoch in range(EPOCHS):
         vtotal += vlens.sum()
 
     _end_time = time.time()
-    details((_end_time - _begin_time), ave_loss/total, ave_dis/total, vave_loss/vtotal, vave_dis/vtotal)
+    details((_end_time - _begin_time), (ave_loss/total).item(), ave_dis/total.item(), (vave_loss/vtotal).item(), vave_dis/vtotal.item())
     _begin_time = time.time()
 
     torch.save(model.state_dict(),"models/model-"+str(int(_begin_time))+"-"+str(int(vave_dis/vtotal))+".pt")
