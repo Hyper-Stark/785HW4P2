@@ -91,10 +91,10 @@ class Speller(nn.Module):
         # is 1. Because <sos>('@') in my char dict has
         # index 0, so the 0th element's probability
         # in this matrix has to be 1.
-        start = torch.zeros(batch_size, len(CHARIDX))
+        start = torch.zeros(batch_size, len(CHARIDX)).to(DEVICE)
         start[:,0] = 1
         results.append(start)
-        indice.append(torch.zeros(batch_size,dtype=torch.long))
+        indice.append(torch.zeros(batch_size,dtype=torch.long).to(DEVICE))
 
         # compute context c_0
         context, attdis = self.attention(h3,keys,values,seqlens)
@@ -158,7 +158,7 @@ class Attention(nn.Module):
         energy = energy.squeeze(2)
 
         # generate mask for padded sequence
-        mask = torch.zeros(batch_size, seq_len)
+        mask = torch.zeros(batch_size, seq_len).to(DEVICE)
         for i in range(batch_size):
             mask[i][:seqlens[i]] = 1
         
