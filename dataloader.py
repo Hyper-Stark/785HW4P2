@@ -110,6 +110,5 @@ def collate_train(pairs):
     tnlablens = torch.tensor(nlablens,dtype=torch.int)
     return pseqs,plabs,tnseqlens,tnlablens
 
-def collate_test(inputs):
-    print(inputs)
-    return inputs
+def collate_test(inputs):    
+    return inputs[0].unsqueeze(0), torch.tensor([i.shape[0] for i in inputs])

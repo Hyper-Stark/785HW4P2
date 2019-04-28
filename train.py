@@ -22,7 +22,7 @@ dev_trans_file = '../data/dev_transcripts.npy'
 train_data_file = '../data/train.npy'
 train_trans_file = '../data/train_transcripts.npy'
 
-train_loader = loader(train_data_file, train_trans_file)
+train_loader = loader(dev_data_file, dev_trans_file)
 valid_loader = loader(dev_data_file, dev_trans_file)
 
 model = ZLNet().to(DEVICE)
@@ -51,7 +51,7 @@ for epoch in range(EPOCHS):
         ilens = ilens.to(DEVICE)
 
         #calculation
-        output, charindice = model(inputs,values,ilens)
+        output, charindice = model(inputs,ilens,values)
 
         #to string
         for i in range(vlens.shape[0]):

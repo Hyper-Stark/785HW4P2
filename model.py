@@ -6,6 +6,7 @@ from constant import CHARIDX
 from torch.nn.utils.rnn import pack_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 
+MAX_LENGTH = 300
 EMBEDDING_DIM = 128
 TEACHING_FORCE_UNIT = 5
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -17,9 +18,12 @@ class ZLNet(nn.Module):
         self.listener = Listener(40,128)
         self.speller = Speller()
 
-    def forward(self, x, y, seqlens):
+    def forward(self, x, seqlens, y = None):
         keys,values,newlens = self.listener(x,seqlens)
-        pred = self.speller(keys, values, y, newlens)
+        if y is not None:
+            pred = self.speller(keys, values, y, newlens)
+        else:
+            pred = self.speller.decode(keys, values, newlens)
         return pred
 
 class Listener(nn.Module):
@@ -77,6 +81,7 @@ class Speller(nn.Module):
 
         results, indice = [],[]
         batch_size = keys.shape[0]
+
         yembeeding = self.embedding(y)
 
         #hidden state
@@ -102,6 +107,7 @@ class Speller(nn.Module):
         for i in range(y.shape[1] - 1):
 
             embedding = yembeeding[:,i,:]
+            # teaching force
             if i % TEACHING_FORCE_UNIT == TEACHING_FORCE_UNIT - 1:
                 embedding = self.embedding(charmaxi)
             
@@ -137,6 +143,55 @@ class Speller(nn.Module):
         result = result.permute(1,0,2)
         indice = indice.permute(1,0)
         return result, indice
+
+
+    def decode(self, keys, values, seqlens):
+
+        results = []
+
+        h1shape = (1, EMBEDDING_DIM)
+        h2shape = (1, self.hidden_size)
+        h1, c1 = [nn.Parameter(torch.zeros(h1shape)).to(DEVICE) for i in range(2)]
+        h2, c2 = [nn.Parameter(torch.zeros(h2shape)).to(DEVICE) for i in range(2)]
+        h3, c3 = [nn.Parameter(torch.zeros(h2shape)).to(DEVICE) for i in range(2)]
+
+        last = 0
+        embedding = self.embedding(torch.tensor([last]).to(DEVICE))
+        context, attdis = self.attention(h3, keys, values, seqlens)
+        
+        for i in range(MAX_LENGTH):
+
+            # s_i = RNN(s_i-1, y_i-1, c_i-1)
+            # c_i-1 = Attention(s_i-1, h), h is a vector
+            input = torch.cat((embedding,context), dim=1)
+            h1,c1 = self.lstmcell1(input, (h1,c1))
+            h1 = self.dropout(h1)
+            h2,c2 = self.lstmcell2(h1, (h2,c2))
+            h3,c3 = self.lstmcell3(h2, (h3,c3))
+
+            # c_i = Attention(s_i, h), 
+            # h3 is actually s_i, 
+            # key/values is actually h
+            context, attdis = self.attention(h3,keys,values,seqlens)
+            
+            # we concatnate lstm's output h3
+            # and context information
+            rnnres_hid = torch.cat((h3, context), dim=1)
+
+            # use MLP to predict
+            output = self.predMLP(rnnres_hid)
+            maxv, maxi = output.max(1)
+
+            # append result
+            last = maxi.item()
+            results.append(last)
+            embedding = self.embedding(torch.tensor([last]).to(DEVICE))
+            
+            # found end, end prediction
+            if results[-1] == 0:
+                break
+        
+        return results
     
 
 class Attention(nn.Module):
