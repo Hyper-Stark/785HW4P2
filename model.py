@@ -147,7 +147,7 @@ class Speller(nn.Module):
 
     def decode(self, keys, values, seqlens):
 
-        results = []
+        indice,results = [],[]
 
         h1shape = (1, EMBEDDING_DIM)
         h2shape = (1, self.hidden_size)
@@ -184,14 +184,17 @@ class Speller(nn.Module):
 
             # append result
             last = maxi.item()
-            results.append(last)
+            indice.append(last)
+            results.append(output)
             embedding = self.embedding(torch.tensor([last]).to(DEVICE))
             
             # found end, end prediction
-            if results[-1] == 0:
+            if indice[-1] == 0:
                 break
         
-        return results
+        results = torch.stack(results)
+        results = results.permute(1,0,2)
+        return results, torch.tensor([indice])
     
 
 class Attention(nn.Module):

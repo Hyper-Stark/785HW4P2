@@ -23,7 +23,7 @@ train_data_file = '../data/train.npy'
 train_trans_file = '../data/train_transcripts.npy'
 
 train_loader = loader(dev_data_file, dev_trans_file)
-valid_loader = loader(dev_data_file, dev_trans_file)
+valid_loader = loader(dev_data_file, dev_trans_file, batch_size=1)
 
 model = ZLNet().to(DEVICE)
 criterion = nn.CrossEntropyLoss()
@@ -93,7 +93,8 @@ for epoch in range(EPOCHS):
         ilens = ilens.to(DEVICE)
 
         #calculation
-        output, charindice = model(inputs,values,ilens)
+        output, charindice = model(inputs,ilens)
+        output = torch.narrow(output, 1, 0, vlens[0])
 
         #to string
         for i in range(vlens.shape[0]):

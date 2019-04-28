@@ -36,32 +36,37 @@ def vectorize(data):
 BATCH_SIZE = 64
 NUM_WORKERS = 4
 
-def loader(dataf,labelf=None):
+def loader(dataf,labelf=None, batch_size = BATCH_SIZE):
 
     _begin_time = time.time()
     dset = ld = None
     chunk = np.load(dataf,encoding="bytes")
+    # chunk = chunk[:50]
     
     #train mode
     if labelf is not None:
         labels = np.load(labelf, encoding="bytes")
         labels = vectorize(labels)
+        # labels = labels[:50]
         dset = Dataset(chunk,labels)
+
+        shuffle = False if batch_size == 1 else True
+        droplast = False if batch_size == 1 else True
         
         if torch.cuda.is_available():
             ld = data.DataLoader(\
                 dset, \
-                batch_size=BATCH_SIZE, \
-                shuffle=True, \
-                drop_last=True, \
+                batch_size=batch_size, \
+                shuffle=shuffle, \
+                drop_last=droplast, \
                 collate_fn=collate_train, \
                 num_workers=NUM_WORKERS)
         else:
             ld = data.DataLoader(\
                 dset, \
-                batch_size=BATCH_SIZE, \
-                shuffle=True, \
-                drop_last=True, \
+                batch_size=batch_size, \
+                shuffle=shuffle, \
+                drop_last=droplast, \
                 collate_fn=collate_train)
     #test mode
     else:
