@@ -94,7 +94,6 @@ for epoch in range(EPOCHS):
 
         #calculation
         output, charindice = model(inputs,ilens)
-        output = torch.narrow(output, 1, 0, vlens[0])
 
         #to string
         for i in range(vlens.shape[0]):
@@ -104,21 +103,6 @@ for epoch in range(EPOCHS):
             truth = ''.join([CHARSET[idx] for idx in tindice])
             vave_dis += L.distance(pred,truth)
 
-        #flatten
-        mergedim = output.shape[0] * output.shape[1]
-        flattenpred = output.contiguous().view(mergedim,-1)
-        flattentruth = values.view(values.numel())
-        loss = criterion(flattenpred, flattentruth)
-
-        #generate mask
-        mask = torch.zeros(values.shape).to(DEVICE)
-        for i in range(vlens.shape[0]):
-            mask[i][:vlens[i]] = 1
-        mask = mask.view(mask.numel())
-
-        #mask loss
-        loss = (loss * mask).sum()
-        vave_loss += loss
         vtotal += vlens.sum()
 
     _end_time = time.time()
