@@ -27,7 +27,7 @@ train_loader = loader(train_data_file, train_trans_file)
 valid_loader = loader(dev_data_file)
 
 model = ZLNet().to(DEVICE)
-# model.load_state_dict(torch.load("model.pt"))
+#model.load_state_dict(torch.load("model.pt"))
 criterion = nn.CrossEntropyLoss()
 opt = optim.Adam(model.parameters(),lr=0.001)
 _begin_time = time.time()
@@ -106,10 +106,10 @@ for epoch in range(EPOCHS):
     pairs = zip(validlabels, validres)
     diss = [(L.distance(truth,pred), len(pred)) for truth, pred in pairs]
     dis, lens = zip(*diss)
-    ave_dis, total = sum(dis), sum(lens)
+    vave_dis, vtotal = sum(dis), sum(lens)
 
     _end_time = time.time()
-    details((_end_time - _begin_time), (ave_loss/total).item(), ave_dis/total.item(), (vave_loss/vtotal).item(), vave_dis/vtotal.item())
+    details((_end_time - _begin_time), (ave_loss/total).item(), ave_dis/total.item(), 0, vave_dis/vtotal)
     _begin_time = time.time()
 
     torch.save(model.state_dict(),"models/model-"+str(int(_begin_time))+"-"+str(int(vave_dis/vtotal))+".pt")

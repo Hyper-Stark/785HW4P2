@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_packed_sequence
 
 MAX_LENGTH = 300
 EMBEDDING_DIM = 128
-TEACHER_FORCING_BAR = 0.15
+TEACHER_FORCING_BAR = 0.01
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class ZLNet(nn.Module):
