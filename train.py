@@ -28,7 +28,7 @@ valid_loader = loader(dev_data_file, dev_trans_file, batch_size=1)
 model = ZLNet().to(DEVICE)
 model.load_state_dict(torch.load("model.pt"))
 criterion = nn.CrossEntropyLoss()
-opt = optim.Adam(model.parameters(),lr=0.0001)
+opt = optim.Adam(model.parameters(),lr=0.001)
 _begin_time = time.time()
 
 for epoch in range(EPOCHS):

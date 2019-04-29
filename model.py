@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_packed_sequence
 
 MAX_LENGTH = 300
 EMBEDDING_DIM = 128
-TEACHER_FORCING_BAR = 0.9
+TEACHER_FORCING_BAR = 0.15
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class ZLNet(nn.Module):
@@ -108,7 +108,7 @@ class Speller(nn.Module):
 
             embedding = yembeeding[:,i,:]
             # teaching force
-            if torch.rand(1).to(DEVICE).item() < TEACHER_FORCING_BAR:
+            if i != 0 and torch.rand(1).to(DEVICE).item() < TEACHER_FORCING_BAR:
                 embedding = self.embedding(charmaxi)
             
             # s_i = RNN(s_i-1, y_i-1, c_i-1)
