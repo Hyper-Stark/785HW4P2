@@ -56,12 +56,10 @@ for epoch in range(EPOCHS):
 
         #to string
         for i in range(vlens.shape[0]):
-            pindice = charindice[i,:vlens[i]]
+            pindice = charindice[i]
             tindice = values[i,:vlens[i]]
             pred = ''.join([CHARSET[idx] for idx in pindice])
             truth = ''.join([CHARSET[idx] for idx in tindice])
-            print('[PREDICATE] '+pred)
-            print('[TRUTH    ] '+truth)
             ave_dis += L.distance(pred,truth)
 
         #flatten
