@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_packed_sequence
 
 MAX_LENGTH = 300
 EMBEDDING_DIM = 128
-TEACHING_FORCE_UNIT = 5
+TEACHING_FORCE_UNIT = 10
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class ZLNet(nn.Module):
@@ -147,7 +147,7 @@ class Speller(nn.Module):
 
     def decode(self, keys, values, seqlens):
 
-        indice,results = [],[]
+        indice = []
 
         h1shape = (1, EMBEDDING_DIM)
         h2shape = (1, self.hidden_size)
@@ -156,6 +156,7 @@ class Speller(nn.Module):
         h3, c3 = [nn.Parameter(torch.zeros(h2shape)).to(DEVICE) for i in range(2)]
 
         last = 0
+        indice.append(last)
         embedding = self.embedding(torch.tensor([last]).to(DEVICE))
         context, attdis = self.attention(h3, keys, values, seqlens)
         
@@ -185,16 +186,13 @@ class Speller(nn.Module):
             # append result
             last = maxi.item()
             indice.append(last)
-            results.append(output)
             embedding = self.embedding(torch.tensor([last]).to(DEVICE))
             
             # found end, end prediction
             if indice[-1] == 0:
                 break
         
-        results = torch.stack(results)
-        results = results.permute(1,0,2)
-        return results, torch.tensor([indice])
+        return torch.tensor([indice])
     
 
 class Attention(nn.Module):

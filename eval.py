@@ -18,7 +18,7 @@ test_data_file = '../data/test.npy'
 testloader = loader(test_data_file)
 
 model = ZLNet().to(DEVICE)
-# model.load_state_dict(torch.load("model.pt"))
+model.load_state_dict(torch.load("model.pt"))
 model.eval()
 
 result = []
@@ -28,8 +28,9 @@ for inputs, lens in testloader:
     inputs = inputs.to(DEVICE)
     
     charindice = model(inputs, lens)
+    charindice = charindice[0]
     pred = ''.join([CHARSET[idx] for idx in charindice])
-    result.append(pred)
+    result.append(pred[1:-1])
 
 #write to file
 with open("result.csv",'w') as f:

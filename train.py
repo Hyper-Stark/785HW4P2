@@ -22,12 +22,13 @@ dev_trans_file = '../data/dev_transcripts.npy'
 train_data_file = '../data/train.npy'
 train_trans_file = '../data/train_transcripts.npy'
 
-train_loader = loader(dev_data_file, dev_trans_file)
+train_loader = loader(train_data_file, train_trans_file)
 valid_loader = loader(dev_data_file, dev_trans_file, batch_size=1)
 
 model = ZLNet().to(DEVICE)
+model.load_state_dict(torch.load("model.pt"))
 criterion = nn.CrossEntropyLoss()
-opt = optim.Adam(model.parameters(),lr=0.001)
+opt = optim.Adam(model.parameters(),lr=0.0001)
 _begin_time = time.time()
 
 for epoch in range(EPOCHS):
@@ -59,6 +60,8 @@ for epoch in range(EPOCHS):
             tindice = values[i,:vlens[i]]
             pred = ''.join([CHARSET[idx] for idx in pindice])
             truth = ''.join([CHARSET[idx] for idx in tindice])
+            print('[PREDICATE] '+pred)
+            print('[TRUTH    ] '+truth)
             ave_dis += L.distance(pred,truth)
 
         #flatten
@@ -93,7 +96,7 @@ for epoch in range(EPOCHS):
         ilens = ilens.to(DEVICE)
 
         #calculation
-        output, charindice = model(inputs,ilens)
+        charindice = model(inputs,ilens)
 
         #to string
         for i in range(vlens.shape[0]):
@@ -101,6 +104,8 @@ for epoch in range(EPOCHS):
             tindice = values[i,:vlens[i]]
             pred = ''.join([CHARSET[idx] for idx in pindice])
             truth = ''.join([CHARSET[idx] for idx in tindice])
+            print('[PREDICATE] '+pred)
+            print('[TRUTH    ] '+truth)
             vave_dis += L.distance(pred,truth)
 
         vtotal += vlens.sum()
