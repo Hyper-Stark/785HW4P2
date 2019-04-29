@@ -2,6 +2,7 @@ import pytz
 import time
 import torch
 import torchvision
+import numpy as np
 import torch.nn as nn
 import datetime as dt
 import Levenshtein as L
@@ -23,13 +24,19 @@ train_data_file = '../data/train.npy'
 train_trans_file = '../data/train_transcripts.npy'
 
 train_loader = loader(train_data_file, train_trans_file)
-valid_loader = loader(dev_data_file, dev_trans_file, batch_size=1)
+valid_loader = loader(dev_data_file)
 
 model = ZLNet().to(DEVICE)
-model.load_state_dict(torch.load("model.pt"))
+# model.load_state_dict(torch.load("model.pt"))
 criterion = nn.CrossEntropyLoss()
 opt = optim.Adam(model.parameters(),lr=0.001)
 _begin_time = time.time()
+
+#manually load valid labels
+labels = np.load(dev_trans_file, encoding="bytes")
+validlabels = []
+for sentence in labels:
+    validlabels.append('@'+' '.join([word.decode('utf-8') for word in sentence])+'@')
 
 for epoch in range(EPOCHS):
 
@@ -85,28 +92,21 @@ for epoch in range(EPOCHS):
 
     #validation
     model.eval()
-    i = vave_loss = vave_dis = vtotal = 0
-    for inputs,values,ilens,vlens in valid_loader:
+    validres = []
+    for inputs,ilens in valid_loader:
 
-        #use cuda
-        inputs = inputs.to(DEVICE)
-        values = values.to(DEVICE)
         ilens = ilens.to(DEVICE)
+        inputs = inputs.to(DEVICE)
+        
+        charindice = model(inputs, ilens)
+        charindice = charindice[0]
+        pred = ''.join([CHARSET[idx] for idx in charindice])
+        validres.append(pred[1:-1])
 
-        #calculation
-        charindice = model(inputs,ilens)
-
-        #to string
-        for i in range(vlens.shape[0]):
-            pindice = charindice[i,:vlens[i]]
-            tindice = values[i,:vlens[i]]
-            pred = ''.join([CHARSET[idx] for idx in pindice])
-            truth = ''.join([CHARSET[idx] for idx in tindice])
-            print('[PREDICATE] '+pred)
-            print('[TRUTH    ] '+truth)
-            vave_dis += L.distance(pred,truth)
-
-        vtotal += vlens.sum()
+    pairs = zip(validlabels, validres)
+    diss = [(L.distance(truth,pred), len(pred)) for truth, pred in pairs]
+    dis, lens = zip(*diss)
+    ave_dis, total = sum(dis), sum(lens)
 
     _end_time = time.time()
     details((_end_time - _begin_time), (ave_loss/total).item(), ave_dis/total.item(), (vave_loss/vtotal).item(), vave_dis/vtotal.item())
