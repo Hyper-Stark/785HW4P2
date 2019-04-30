@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_packed_sequence
 
 MAX_LENGTH = 300
 EMBEDDING_DIM = 128
-TEACHER_FORCING_BAR = 0.01
+TEACHER_FORCING_BAR = 0.15
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class ZLNet(nn.Module):
@@ -174,9 +174,11 @@ class Speller(nn.Module):
             # c_i-1 = Attention(s_i-1, h), h is a vector
             input = torch.cat((embedding,context), dim=1)
             h1,c1 = self.lstmcell1(input, (h1,c1))
-            h1 = self.dropout(h1)
+            h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
+            h2 = self.dropout2(h2)
             h3,c3 = self.lstmcell3(h2, (h3,c3))
+            h3 = self.dropout3(h3)
 
             # c_i = Attention(s_i, h), 
             # h3 is actually s_i, 

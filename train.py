@@ -27,7 +27,7 @@ train_loader = loader(train_data_file, train_trans_file)
 valid_loader = loader(dev_data_file)
 
 model = ZLNet().to(DEVICE)
-#model.load_state_dict(torch.load("model.pt"))
+model.load_state_dict(torch.load("model.pt"))
 criterion = nn.CrossEntropyLoss()
 opt = optim.Adam(model.parameters(),lr=0.001)
 _begin_time = time.time()
