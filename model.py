@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_packed_sequence
 
 MAX_LENGTH = 300
 EMBEDDING_DIM = 128
-TEACHER_FORCING_BAR = 0.15
+TEACHER_FORCING_BAR = 0.01
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class ZLNet(nn.Module):
@@ -31,11 +31,9 @@ class Listener(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(Listener,self).__init__()
         self.pblstm1 = pBLSTM(input_size,hidden_size)
-        self.dropout1 = nn.Dropout(p=0.25)
+        self.dropout1 = nn.Dropout(p=0.3)
         self.pblstm2 = pBLSTM(2*hidden_size,hidden_size)
-        self.dropout2 = nn.Dropout(p=0.25)
         self.pblstm3 = pBLSTM(2*hidden_size,hidden_size)
-        self.dropout3 = nn.Dropout(p=0.25)
 
         self.keymlp = nn.Sequential(
             nn.Linear(hidden_size*2,256),
@@ -53,9 +51,7 @@ class Listener(nn.Module):
         x = self.pblstm1(x)
         x = self.dropout1(x)
         x = self.pblstm2(x)
-        x = self.dropout2(x)
         x = self.pblstm3(x)
-        x = self.dropout3(x)
 
         seqlens = (seqlens//8).type(torch.IntTensor)
         
@@ -75,11 +71,9 @@ class Speller(nn.Module):
 
         self.embedding = nn.Embedding(len(CHARIDX),EMBEDDING_DIM)
         self.lstmcell1 = nn.LSTMCell(input_size+EMBEDDING_DIM, EMBEDDING_DIM)
-        self.dropout1 = nn.Dropout(p=0.25)
+        self.dropout1 = nn.Dropout(p=0.1)
         self.lstmcell2 = nn.LSTMCell(EMBEDDING_DIM, hidden_size)
-        self.dropout2 = nn.Dropout(p=0.25)
         self.lstmcell3 = nn.LSTMCell(hidden_size,hidden_size)
-        self.dropout3 = nn.Dropout(p=0.25)
         self.attention = Attention()
         self.predMLP = nn.Linear(256+hidden_size,len(CHARIDX))
     
@@ -123,9 +117,7 @@ class Speller(nn.Module):
             h1,c1 = self.lstmcell1(input, (h1,c1))
             h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
-            h2 = self.dropout2(h2)
             h3,c3 = self.lstmcell3(h2, (h3,c3))
-            h3 = self.dropout3(h3)
 
             # c_i = Attention(s_i, h), 
             # h3 is actually s_i, 
@@ -176,9 +168,7 @@ class Speller(nn.Module):
             h1,c1 = self.lstmcell1(input, (h1,c1))
             h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
-            h2 = self.dropout2(h2)
             h3,c3 = self.lstmcell3(h2, (h3,c3))
-            h3 = self.dropout3(h3)
 
             # c_i = Attention(s_i, h), 
             # h3 is actually s_i, 

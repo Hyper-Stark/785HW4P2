@@ -33,7 +33,7 @@ def vectorize(data):
         res.append(vec)
     return res
 
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 NUM_WORKERS = 4
 
 def loader(dataf,labelf=None, batch_size = BATCH_SIZE):
