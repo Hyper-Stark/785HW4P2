@@ -16,7 +16,7 @@ class ZLNet(nn.Module):
 
     def __init__(self):
         super(ZLNet, self).__init__()
-        self.listener = Listener(40,256)
+        self.listener = Listener(40,512)
         self.speller = Speller(BATCH_SIZE)
 
     def forward(self, x, seqlens, y = None):
@@ -39,15 +39,15 @@ class Listener(nn.Module):
         self.dropout3 = nn.Dropout(p=0.25)
 
         self.keymlp = nn.Sequential(
-            nn.Linear(hidden_size*2,384),
+            nn.Linear(hidden_size*2,512),
             nn.LeakyReLU(negative_slope = 0.1),
-            nn.Linear(384,256)
+            nn.Linear(512,256)
         )
 
         self.valuemlp = nn.Sequential(
-            nn.Linear(hidden_size*2,384),
+            nn.Linear(hidden_size*2,512),
             nn.LeakyReLU(negative_slope = 0.1),
-            nn.Linear(384,256)
+            nn.Linear(512,256)
         )
 
     def forward(self, x, seqlens):
@@ -80,8 +80,6 @@ class Speller(nn.Module):
         self.dropout1 = nn.Dropout(p=0.25)
         self.lstmcell2 = nn.LSTMCell(EMBEDDING_DIM, hidden_size)
         self.dropout2 = nn.Dropout(p=0.25)
-        self.lstmcell3 = nn.LSTMCell(hidden_size,hidden_size)
-        self.dropout3 = nn.Dropout(p=0.25)
         self.attention = Attention()
         self.predMLP = nn.Linear(256+hidden_size,len(CHARIDX))
         
@@ -89,7 +87,6 @@ class Speller(nn.Module):
         h2shape = (batch_size, hidden_size)
         self.h1, self.c1 = [nn.Parameter(torch.zeros(h1shape)) for i in range(2)]
         self.h2, self.c2 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
-        self.h3, self.c3 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
 
         self.start = nn.Parameter(torch.zeros(h2shape))
     
@@ -100,7 +97,6 @@ class Speller(nn.Module):
 
         h1, c1 = self.h1, self.c1
         h2, c2 = self.h2, self.c2
-        h3, c3 = self.h3, self.c3
 
         # start state: s_0, the beginning of a sentence
         # must be a <sos>, and 'must' means the probability 
@@ -129,17 +125,15 @@ class Speller(nn.Module):
             h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
             h2 = self.dropout2(h2)
-            h3,c3 = self.lstmcell3(h2, (h3,c3))
-            h3 = self.dropout3(h3)
 
             # c_i = Attention(s_i, h), 
-            # h3 is actually s_i, 
+            # h2 is actually s_i, 
             # key/values is actually h
-            context, attdis = self.attention(h3,keys,values,seqlens)
+            context, attdis = self.attention(h2,keys,values,seqlens)
 
-            # we concatnate lstm's output h3
+            # we concatnate lstm's output h2
             # and context information
-            rnnres_hid = torch.cat((h3, context), dim=1)
+            rnnres_hid = torch.cat((h2, context), dim=1)
 
             # use MLP to predict
             output = self.predMLP(rnnres_hid)
@@ -165,7 +159,6 @@ class Speller(nn.Module):
         indice = []
         h1,c1 = self.flat(self.h1), self.flat(self.c1)
         h2,c2 = self.flat(self.h2), self.flat(self.c2)
-        h3,c3 = self.flat(self.h3), self.flat(self.c3)
         start = self.flat(self.start)
 
         last = 0
@@ -182,17 +175,15 @@ class Speller(nn.Module):
             h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
             h2 = self.dropout2(h2)
-            h3,c3 = self.lstmcell3(h2, (h3,c3))
-            h3 = self.dropout3(h3)
 
             # c_i = Attention(s_i, h), 
-            # h3 is actually s_i, 
+            # h2 is actually s_i, 
             # key/values is actually h
-            context, attdis = self.attention(h3,keys,values,seqlens)
+            context, attdis = self.attention(h2,keys,values,seqlens)
             
-            # we concatnate lstm's output h3
+            # we concatnate lstm's output h2
             # and context information
-            rnnres_hid = torch.cat((h3, context), dim=1)
+            rnnres_hid = torch.cat((h2, context), dim=1)
 
             # use MLP to predict
             output = self.predMLP(rnnres_hid)
