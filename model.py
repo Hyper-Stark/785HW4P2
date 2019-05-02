@@ -87,6 +87,7 @@ class Speller(nn.Module):
         h2shape = (batch_size, hidden_size)
         self.h1, self.c1 = [nn.Parameter(torch.zeros(h1shape)) for i in range(2)]
         self.h2, self.c2 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
+        self.h3, self.c3 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
 
         self.start = nn.Parameter(torch.zeros(h2shape))
     
@@ -97,6 +98,7 @@ class Speller(nn.Module):
 
         h1, c1 = self.h1, self.c1
         h2, c2 = self.h2, self.c2
+        h3, c3 = self.h3, self.c3
 
         # start state: s_0, the beginning of a sentence
         # must be a <sos>, and 'must' means the probability 
@@ -125,15 +127,17 @@ class Speller(nn.Module):
             h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
             h2 = self.dropout2(h2)
+            h3,c3 = self.lstmcell2(h2, (h3,c3))
+            h3 = self.dropout2(h3)
 
             # c_i = Attention(s_i, h), 
-            # h2 is actually s_i, 
+            # h3 is actually s_i, 
             # key/values is actually h
-            context, attdis = self.attention(h2,keys,values,seqlens)
+            context, attdis = self.attention(h3,keys,values,seqlens)
 
-            # we concatnate lstm's output h2
+            # we concatnate lstm's output h3
             # and context information
-            rnnres_hid = torch.cat((h2, context), dim=1)
+            rnnres_hid = torch.cat((h3, context), dim=1)
 
             # use MLP to predict
             output = self.predMLP(rnnres_hid)
@@ -159,6 +163,7 @@ class Speller(nn.Module):
         indice = []
         h1,c1 = self.flat(self.h1), self.flat(self.c1)
         h2,c2 = self.flat(self.h2), self.flat(self.c2)
+        h3,c3 = self.flat(self.h3), self.flat(self.c3)
         start = self.flat(self.start)
 
         last = 0
@@ -175,15 +180,17 @@ class Speller(nn.Module):
             h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
             h2 = self.dropout2(h2)
+            h3,c3 = self.lstmcell2(h2, (h3,c3))
+            h3 = self.dropout2(h3)
 
             # c_i = Attention(s_i, h), 
-            # h2 is actually s_i, 
+            # h3 is actually s_i, 
             # key/values is actually h
-            context, attdis = self.attention(h2,keys,values,seqlens)
+            context, attdis = self.attention(h3,keys,values,seqlens)
             
-            # we concatnate lstm's output h2
+            # we concatnate lstm's output h3
             # and context information
-            rnnres_hid = torch.cat((h2, context), dim=1)
+            rnnres_hid = torch.cat((h3, context), dim=1)
 
             # use MLP to predict
             output = self.predMLP(rnnres_hid)
