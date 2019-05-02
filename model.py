@@ -16,7 +16,7 @@ class ZLNet(nn.Module):
 
     def __init__(self):
         super(ZLNet, self).__init__()
-        self.listener = Listener(40,128)
+        self.listener = Listener(40,256)
         self.speller = Speller(BATCH_SIZE)
 
     def forward(self, x, seqlens, y = None):
@@ -39,14 +39,14 @@ class Listener(nn.Module):
         self.dropout3 = nn.Dropout(p=0.25)
 
         self.keymlp = nn.Sequential(
-            nn.Linear(hidden_size*2,256),
-            nn.ReLU(),
+            nn.Linear(hidden_size*2,384),
+            nn.LeakyReLU(negative_slope = 0.1),
             nn.Linear(256,256)
         )
 
         self.valuemlp = nn.Sequential(
-            nn.Linear(hidden_size*2,256),
-            nn.ReLU(),
+            nn.Linear(hidden_size*2,384),
+            nn.LeakyReLU(negative_slope = 0.1),
             nn.Linear(256,256)
         )
 
