@@ -80,6 +80,8 @@ class Speller(nn.Module):
         self.dropout1 = nn.Dropout(p=0.25)
         self.lstmcell2 = nn.LSTMCell(EMBEDDING_DIM, hidden_size)
         self.dropout2 = nn.Dropout(p=0.25)
+        self.lstmcell3 = nn.LSTMCell(hidden_size, hidden_size)
+        self.dropout3 = nn.Dropout(p=0.25)
         self.attention = Attention()
         self.predMLP = nn.Linear(256+hidden_size,len(CHARIDX))
         
@@ -127,8 +129,8 @@ class Speller(nn.Module):
             h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
             h2 = self.dropout2(h2)
-            h3,c3 = self.lstmcell2(h2, (h3,c3))
-            h3 = self.dropout2(h3)
+            h3,c3 = self.lstmcell3(h2, (h3,c3))
+            h3 = self.dropout3(h3)
 
             # c_i = Attention(s_i, h), 
             # h3 is actually s_i, 
@@ -180,8 +182,8 @@ class Speller(nn.Module):
             h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
             h2 = self.dropout2(h2)
-            h3,c3 = self.lstmcell2(h2, (h3,c3))
-            h3 = self.dropout2(h3)
+            h3,c3 = self.lstmcell3(h2, (h3,c3))
+            h3 = self.dropout3(h3)
 
             # c_i = Attention(s_i, h), 
             # h3 is actually s_i, 
