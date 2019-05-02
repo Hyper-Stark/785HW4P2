@@ -181,7 +181,9 @@ class Speller(nn.Module):
             h1,c1 = self.lstmcell1(input, (h1,c1))
             h1 = self.dropout1(h1)
             h2,c2 = self.lstmcell2(h1, (h2,c2))
+            h2 = self.dropout2(h2)
             h3,c3 = self.lstmcell3(h2, (h3,c3))
+            h3 = self.dropout3(h3)
 
             # c_i = Attention(s_i, h), 
             # h3 is actually s_i, 
