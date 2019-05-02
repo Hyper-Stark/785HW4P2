@@ -41,13 +41,13 @@ class Listener(nn.Module):
         self.keymlp = nn.Sequential(
             nn.Linear(hidden_size*2,384),
             nn.LeakyReLU(negative_slope = 0.1),
-            nn.Linear(256,256)
+            nn.Linear(384,256)
         )
 
         self.valuemlp = nn.Sequential(
             nn.Linear(hidden_size*2,384),
             nn.LeakyReLU(negative_slope = 0.1),
-            nn.Linear(256,256)
+            nn.Linear(384,256)
         )
 
     def forward(self, x, seqlens):
