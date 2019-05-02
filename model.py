@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from constant import CHARIDX
+from dataloader import BATCH_SIZE
 from torch.nn.utils.rnn import pack_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 
@@ -16,7 +17,7 @@ class ZLNet(nn.Module):
     def __init__(self):
         super(ZLNet, self).__init__()
         self.listener = Listener(40,128)
-        self.speller = Speller()
+        self.speller = Speller(BATCH_SIZE)
 
     def forward(self, x, seqlens, y = None):
         keys,values,newlens = self.listener(x,seqlens)
@@ -63,9 +64,10 @@ class Listener(nn.Module):
 
 class Speller(nn.Module):
 
-    def __init__(self, input_size=256, hidden_size=256):
+    def __init__(self, batch_size, input_size=256, hidden_size=256):
 
         super(Speller,self).__init__()
+        self.batch_size = batch_size
         self.input_size = input_size
         self.hidden_size = hidden_size
 
@@ -76,33 +78,36 @@ class Speller(nn.Module):
         self.lstmcell3 = nn.LSTMCell(hidden_size,hidden_size)
         self.attention = Attention()
         self.predMLP = nn.Linear(256+hidden_size,len(CHARIDX))
+        
+        h1shape = (batch_size, EMBEDDING_DIM)
+        h2shape = (batch_size, hidden_size)
+        self.h1, self.c1 = [nn.Parameter(torch.zeros(h1shape)) for i in range(2)]
+        self.h2, self.c2 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
+        self.h3, self.c3 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
+
+        self.start = nn.Parameter(torch.zeros(h2shape))
     
     def forward(self, keys, values, y, seqlens):
 
         results, indice = [],[]
-        batch_size = keys.shape[0]
-
         yembeeding = self.embedding(y)
 
-        #hidden state
-        h1shape = (batch_size, EMBEDDING_DIM)
-        h2shape = (batch_size, self.hidden_size)
-        h1, c1 = [nn.Parameter(torch.zeros(h1shape)).to(DEVICE) for i in range(2)]
-        h2, c2 = [nn.Parameter(torch.zeros(h2shape)).to(DEVICE) for i in range(2)]
-        h3, c3 = [nn.Parameter(torch.zeros(h2shape)).to(DEVICE) for i in range(2)]
+        h1, c1 = self.h1, self.c1
+        h2, c2 = self.h2, self.c2
+        h3, c3 = self.h3, self.c3
 
         # start state: s_0, the beginning of a sentence
         # must be a <sos>, and 'must' means the probability 
         # is 1. Because <sos>('@') in my char dict has
         # index 0, so the 0th element's probability
         # in this matrix has to be 1.
-        start = torch.zeros(batch_size, len(CHARIDX)).to(DEVICE)
+        start = torch.zeros(self.batch_size, len(CHARIDX)).to(DEVICE)
         start[:,0] = 1
         results.append(start)
-        indice.append(torch.zeros(batch_size,dtype=torch.long).to(DEVICE))
+        indice.append(torch.zeros(self.batch_size,dtype=torch.long).to(DEVICE))
 
         # compute context c_0
-        context, attdis = self.attention(h3,keys,values,seqlens)
+        context, attdis = self.attention(self.start,keys,values,seqlens)
 
         for i in range(y.shape[1] - 1):
 
@@ -144,21 +149,21 @@ class Speller(nn.Module):
         indice = indice.permute(1,0)
         return result, indice
 
+    def flat(self,matrix):
+        return matrix.sum(dim=0).unsqueeze(0)/matrix.shape[0]
 
     def decode(self, keys, values, seqlens):
 
         indice = []
-
-        h1shape = (1, EMBEDDING_DIM)
-        h2shape = (1, self.hidden_size)
-        h1, c1 = [nn.Parameter(torch.zeros(h1shape)).to(DEVICE) for i in range(2)]
-        h2, c2 = [nn.Parameter(torch.zeros(h2shape)).to(DEVICE) for i in range(2)]
-        h3, c3 = [nn.Parameter(torch.zeros(h2shape)).to(DEVICE) for i in range(2)]
+        h1,c1 = self.flat(self.h1), self.flat(self.c1)
+        h2,c2 = self.flat(self.h2), self.flat(self.c2)
+        h3,c3 = self.flat(self.h3), self.flat(self.c3)
+        start = self.flat(self.start)
 
         last = 0
         indice.append(last)
         embedding = self.embedding(torch.tensor([last]).to(DEVICE))
-        context, attdis = self.attention(h3, keys, values, seqlens)
+        context, attdis = self.attention(start, keys, values, seqlens)
         
         for i in range(MAX_LENGTH):
 
