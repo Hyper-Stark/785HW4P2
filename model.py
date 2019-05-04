@@ -86,7 +86,6 @@ class Speller(nn.Module):
         self.attention = Attention()
         self.prePredMLP = nn.Linear(256+hidden_size,len(CHARIDX))
         self.decoder = nn.Linear(EMBEDDING_DIM, len(CHARIDX))
-        self.start = nn.Parameter(torch.zeros(h2shape))
 
         # weight tying
         self.decoder.weight = self.embedding.weight
@@ -98,6 +97,7 @@ class Speller(nn.Module):
         self.h2, self.c2 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
         self.h3, self.c3 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
         
+        self.start = nn.Parameter(torch.zeros(h2shape))
     
     def forward(self, keys, values, y, seqlens):
 
