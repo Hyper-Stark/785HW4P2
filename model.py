@@ -75,6 +75,7 @@ class Speller(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
 
+        # components initialization
         self.embedding = nn.Embedding(len(CHARIDX),EMBEDDING_DIM)
         self.lstmcell1 = nn.LSTMCell(input_size+EMBEDDING_DIM, EMBEDDING_DIM)
         self.dropout1 = nn.Dropout(p=0.25)
@@ -83,15 +84,20 @@ class Speller(nn.Module):
         self.lstmcell3 = nn.LSTMCell(hidden_size,hidden_size)
         self.dropout3 = nn.Dropout(p=0.25)
         self.attention = Attention()
-        self.predMLP = nn.Linear(256+hidden_size,len(CHARIDX))
+        self.prePredMLP = nn.Linear(256+hidden_size,len(CHARIDX))
+        self.decoder = nn.Linear(EMBEDDING_DIM, len(CHARIDX))
+        self.start = nn.Parameter(torch.zeros(h2shape))
+
+        # weight tying
+        self.decoder.weight = self.embedding.weight
         
+        # hidden state initialize
         h1shape = (batch_size, EMBEDDING_DIM)
         h2shape = (batch_size, hidden_size)
         self.h1, self.c1 = [nn.Parameter(torch.zeros(h1shape)) for i in range(2)]
         self.h2, self.c2 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
         self.h3, self.c3 = [nn.Parameter(torch.zeros(h2shape)) for i in range(2)]
-
-        self.start = nn.Parameter(torch.zeros(h2shape))
+        
     
     def forward(self, keys, values, y, seqlens):
 
@@ -142,7 +148,8 @@ class Speller(nn.Module):
             rnnres_hid = torch.cat((h3, context), dim=1)
 
             # use MLP to predict
-            output = self.predMLP(rnnres_hid)
+            output = self.prePredMLP(rnnres_hid)
+            output = self.decoder(output)
             results.append(output)
 
             # get the predicted character, 
@@ -195,7 +202,8 @@ class Speller(nn.Module):
             rnnres_hid = torch.cat((h3, context), dim=1)
 
             # use MLP to predict
-            output = self.predMLP(rnnres_hid)
+            output = self.prePredMLP(rnnres_hid)
+            output = self.decoder(output)
             maxv, maxi = output.max(1)
 
             # append result
