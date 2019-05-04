@@ -84,7 +84,7 @@ class Speller(nn.Module):
         self.lstmcell3 = nn.LSTMCell(hidden_size,hidden_size)
         self.dropout3 = nn.Dropout(p=0.25)
         self.attention = Attention()
-        self.prePredMLP = nn.Linear(256+hidden_size,len(CHARIDX))
+        self.prePredMLP = nn.Linear(256+hidden_size, EMBEDDING_DIM)
         self.decoder = nn.Linear(EMBEDDING_DIM, len(CHARIDX))
 
         # weight tying
